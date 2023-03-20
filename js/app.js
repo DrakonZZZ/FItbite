@@ -21,10 +21,39 @@ class CalorieTrack {
     this.#renderer();
   }
 
+  removeMeal(id) {
+    const idx = this._meals.findIndex((meal) => meal.id === id);
+    if (idx !== -1) {
+      console.log(idx);
+      const meal = this._meals[idx];
+      this._meals.splice(idx, 1);
+      this._totalCalories -= meal.calories;
+      this.#renderer();
+    }
+    console.log(this._meals);
+  }
+
   addWorkout(workout) {
     this._workouts.push(workout);
     this.#displayWorkout(workout);
     this._totalCalories -= workout.calories;
+    this.#renderer();
+  }
+
+  removeWorkout(id) {
+    const idx = this._workouts.findIndex((workout) => workout.id === id);
+    if (idx !== -1) {
+      const workout = this._workouts[idx];
+      this._workouts.splice(idx, 1);
+      this._totalCalories -= workout.idx;
+      this.#renderer();
+    }
+  }
+
+  reset() {
+    this._totalCalories = 0;
+    this._meals = [];
+    this._workouts = [];
     this.#renderer();
   }
 
@@ -111,6 +140,13 @@ class CalorieTrack {
         <i class="fa-solid fa-xmark"></i>
       </button>
     </div>`;
+    workoutEl.appendChild(newEl);
+  }
+
+  #displayProgress() {
+    const progress = document.getElementById('progress-calorie');
+    const percentage = (this._totalCalories / this._calorieLimit) * 100;
+    progress.style.width = `${percentage}%`;
   }
 
   #renderer() {
@@ -119,12 +155,6 @@ class CalorieTrack {
     this.#caloriesBurned();
     this.#displayRemainingCalories();
     this.#displayProgress();
-  }
-
-  #displayProgress() {
-    const progress = document.getElementById('progress-calorie');
-    const percentage = (this._totalCalories / this._calorieLimit) * 100;
-    progress.style.width = `${percentage}%`;
   }
 }
 
@@ -143,6 +173,15 @@ class App {
     document
       .getElementById('workout-items')
       .addEventListener('click', this.#deleteItem.bind(this, 'workout'));
+    document
+      .getElementById('filter-meals')
+      .addEventListener('keyup', this.#filter.bind(this, 'meal'));
+    document
+      .getElementById('filter-workouts')
+      .addEventListener('keyup', this.#filter.bind(this, 'workout'));
+    document
+      .getElementById('reset')
+      .addEventListener('click', this.#reset.bind(this));
   }
 
   #newItem(type, e) {
@@ -171,18 +210,39 @@ class App {
   }
 
   #deleteItem(type, e) {
-    const parentEl = e.target.parentElement.parentElement.parentElement;
     if (
       e.target.classList.contains('delete') ||
       e.target.classList.contains('fa-xmark')
     ) {
+      const id = e.target.closest('.card').getAttribute('data-id');
       if (confirm('are your sure?')) {
-        // type === 'meal'
-        //   ? this.tracker.removeMeal()
-        //   : this.tracker.removeWorkout();
+        type === 'meal'
+          ? this.tracker.removeMeal(id)
+          : this.tracker.removeWorkout(id);
+        const parentEl = e.target.closest('.card');
         parentEl.remove();
       }
     }
+  }
+
+  #filter(type, e) {
+    const text = e.target.value.toLowerCase();
+    document.querySelectorAll(`#${type}-items .card`).forEach((item) => {
+      const name = item.firstElementChild.firstElementChild.textContent;
+      if (name.toLowerCase().indexOf(text) !== -1) {
+        item.style.display = 'block';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+  }
+
+  #reset() {
+    document.getElementById('meal-items').innerHTML = '';
+    document.getElementById('workout-items').innerHTML = '';
+    document.getElementById('filter-meals').value = '';
+    document.getElementById('filter-workouts').value = '';
+    this.tracker.reset();
   }
 }
 
